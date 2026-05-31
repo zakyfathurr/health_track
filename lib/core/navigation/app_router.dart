@@ -7,6 +7,8 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/home/presentation/dashboard_screen.dart';
 import '../../features/mood_journal/presentation/mood_list_screen.dart';
 import '../../features/mood_journal/presentation/mood_add_screen.dart';
+import '../../features/mood_journal/presentation/mood_edit_screen.dart';
+import '../../features/mood_journal/domain/mood_model.dart';
 import '../../features/workout/presentation/workout_list_screen.dart';
 import '../../features/workout/presentation/workout_add_screen.dart';
 import '../../features/daily_goals/presentation/goals_list_screen.dart';
@@ -52,6 +54,12 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'add',
               builder: (context, state) => const MoodAddScreen(),
+            ),
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) => MoodEditScreen(
+                entry: state.extra as MoodModel,
+              ),
             ),
           ],
         ),
