@@ -6,25 +6,19 @@ class AppBottomNav extends StatelessWidget {
 
   const AppBottomNav({super.key, required this.child});
 
+  // Maksimal 5 tab. Jangan ditambah lagi.
   static const _tabs = [
     _TabItem(path: '/home', icon: Icons.home_rounded, label: 'Home'),
-    _TabItem(
-      path: '/mood',
-      icon: Icons.sentiment_satisfied_rounded,
-      label: 'Mood',
-    ),
-    _TabItem(
-      path: '/workout',
-      icon: Icons.fitness_center_rounded,
-      label: 'Workout',
-    ),
+    _TabItem(path: '/mood', icon: Icons.sentiment_satisfied_rounded, label: 'Mood'),
     _TabItem(path: '/goals', icon: Icons.track_changes_rounded, label: 'Goals'),
+    _TabItem(path: '/community', icon: Icons.forum_rounded, label: 'Community'),
     _TabItem(path: '/profile', icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     for (var i = 0; i < _tabs.length; i++) {
+      // Pastikan pencocokan path lebih spesifik agar tidak bentrok
       if (location.startsWith(_tabs[i].path)) return i;
     }
     return 0;
@@ -40,8 +34,8 @@ class AppBottomNav extends StatelessWidget {
         destinations: _tabs
             .map(
               (tab) =>
-                  NavigationDestination(icon: Icon(tab.icon), label: tab.label),
-            )
+              NavigationDestination(icon: Icon(tab.icon), label: tab.label),
+        )
             .toList(),
       ),
     );
