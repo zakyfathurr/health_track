@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// HealthTrack Firestore Security Rules
+//
+// Client-side `.where('userId', ==, uid)` is NOT security — it only shapes the
+// query. These rules enforce, on the server, that a signed-in user can only
+// read/write their own data. Deploy with:
+//   firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // users/{uid}: a user may read/write only their own profile document.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Per-user collections carry a `userId` field on every document.
+    // read covers get + list; list queries must filter by userId to satisfy this.
+    match /moods/{docId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId);
+    }
+
+    match /workouts/{docId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId);
+    }
+
+    match /goals/{docId} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+                    && isOwner(request.resource.data.userId);
+    }
+  }
+}
