@@ -7,6 +7,8 @@ class AuthNotifier extends ChangeNotifier {
   }
 
   bool get isLoggedIn => FirebaseAuth.instance.currentUser != null;
+
+  String? get uid => FirebaseAuth.instance.currentUser?.uid;
 }
 
 final authNotifier = AuthNotifier();
