@@ -7,12 +7,9 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/home/presentation/dashboard_screen.dart';
 import '../../features/mood_journal/presentation/mood_list_screen.dart';
 import '../../features/mood_journal/presentation/mood_add_screen.dart';
-import '../../features/mood_journal/presentation/mood_edit_screen.dart';
-import '../../features/mood_journal/domain/mood_model.dart';
-import '../../features/workout/presentation/workout_list_screen.dart';
-import '../../features/workout/presentation/workout_add_screen.dart';
 import '../../features/daily_goals/presentation/goals_list_screen.dart';
 import '../../features/daily_goals/presentation/goal_add_screen.dart';
+import '../../features/community/presentation/community_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 
 final appRouter = GoRouter(
@@ -22,8 +19,8 @@ final appRouter = GoRouter(
     final isLoggedIn = authNotifier.isLoggedIn;
     final isAuthRoute =
         state.matchedLocation.startsWith('/login') ||
-        state.matchedLocation.startsWith('/register') ||
-        state.matchedLocation.startsWith('/forgot-password');
+            state.matchedLocation.startsWith('/register') ||
+            state.matchedLocation.startsWith('/forgot-password');
 
     if (!isLoggedIn && !isAuthRoute) return '/login';
     if (isLoggedIn && isAuthRoute) return '/home';
@@ -64,17 +61,7 @@ final appRouter = GoRouter(
           ],
         ),
         GoRoute(
-          path: '/workout',
-          builder: (context, state) => const WorkoutListScreen(),
-          routes: [
-            GoRoute(
-              path: 'add',
-              builder: (context, state) => const WorkoutAddScreen(),
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/goals',
+          path: '/goals', // Gabungan target olahraga
           builder: (context, state) => const GoalsListScreen(),
           routes: [
             GoRoute(
@@ -82,6 +69,10 @@ final appRouter = GoRouter(
               builder: (context, state) => const GoalAddScreen(),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/community',
+          builder: (context, state) => const CommunityScreen(),
         ),
         GoRoute(
           path: '/profile',
