@@ -52,6 +52,12 @@ final appRouter = GoRouter(
               path: 'add',
               builder: (context, state) => const MoodAddScreen(),
             ),
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) => MoodEditScreen(
+                entry: state.extra as MoodModel,
+              ),
+            ),
           ],
         ),
         GoRoute(
