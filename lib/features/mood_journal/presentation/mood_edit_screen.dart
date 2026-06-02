@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../domain/mood_model.dart';
 import '../domain/mood_usecases.dart';
 
 const _moodOptions = [
@@ -13,20 +13,30 @@ const _moodOptions = [
   ('tired', '😴', 'Lelah'),
 ];
 
-class MoodAddScreen extends StatefulWidget {
-  const MoodAddScreen({super.key});
+class MoodEditScreen extends StatefulWidget {
+  const MoodEditScreen({super.key, required this.entry});
+
+  final MoodModel entry;
 
   @override
-  State<MoodAddScreen> createState() => _MoodAddScreenState();
+  State<MoodEditScreen> createState() => _MoodEditScreenState();
 }
 
-class _MoodAddScreenState extends State<MoodAddScreen> {
-  final _addMood = AddMoodUseCase();
-  final _noteCtrl = TextEditingController();
+class _MoodEditScreenState extends State<MoodEditScreen> {
+  final _updateMood = UpdateMoodUseCase();
+  late final TextEditingController _noteCtrl;
 
-  String? _selectedMood;
-  DateTime _date = DateTime.now();
+  late String _selectedMood;
+  late DateTime _date;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMood = widget.entry.mood;
+    _date = widget.entry.date;
+    _noteCtrl = TextEditingController(text: widget.entry.note);
+  }
 
   @override
   void dispose() {
@@ -45,23 +55,14 @@ class _MoodAddScreenState extends State<MoodAddScreen> {
   }
 
   Future<void> _save() async {
-    if (_selectedMood == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih mood dulu ya')),
-      );
-      return;
-    }
-
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
-
     setState(() => _saving = true);
     try {
-      await _addMood(
-        userId: userId,
-        mood: _selectedMood!,
-        note: _noteCtrl.text.trim(),
-        date: _date,
+      await _updateMood(
+        widget.entry.copyWith(
+          mood: _selectedMood,
+          note: _noteCtrl.text.trim(),
+          date: _date,
+        ),
       );
       if (mounted) context.pop();
     } catch (e) {
@@ -80,7 +81,7 @@ class _MoodAddScreenState extends State<MoodAddScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Catat Mood')),
+      appBar: AppBar(title: const Text('Edit Mood')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
