@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widgets/forum_tab.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -9,69 +10,103 @@ class CommunityScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return DefaultTabController(
-      length: 2, // Jumlah tab: Forum dan AI Chat
+      length: 2,
       child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+        // Background lebih clean biar kontennya menonjol
+        backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF1F1F1F) : theme.primaryColor,
+          backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
           elevation: 0,
-          title: const Text(
-            'Konsultasi & Komunitas',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          toolbarHeight: 100, // Kasih ruang napas yang luas di atas
+          title: Padding(
+            padding: const EdgeInsets.only(top: 24.0, left: 8.0, right: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ruang Diskusi',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Tanya AI atau ngobrol bareng komunitas',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-          bottom: TabBar(
-            indicatorColor: isDark ? theme.primaryColor : Colors.white,
-            indicatorWeight: 3,
-            labelColor: isDark ? theme.primaryColor : Colors.white,
-            unselectedLabelColor: isDark ? Colors.white54 : Colors.white70,
-            tabs: const [
-              Tab(
-                icon: Icon(Icons.forum_rounded),
-                text: 'Forum Diskusi',
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Container(
+              height: 50,
+              margin: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF222222) : Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
               ),
-              Tab(
-                icon: Icon(Icons.smart_toy_rounded),
-                text: 'Chatbot AI',
+              child: TabBar(
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                indicator: BoxDecoration(
+                  color: isDark ? theme.primaryColor.withOpacity(0.2) : theme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: theme.primaryColor.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                labelColor: theme.primaryColor,
+                unselectedLabelColor: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                tabs: const [
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.forum_rounded, size: 20),
+                        SizedBox(width: 8),
+                        Text('Forum'),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, size: 20),
+                        SizedBox(width: 8),
+                        Text('AI Chat'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         body: const TabBarView(
+          physics: BouncingScrollPhysics(),
           children: [
-            // Konten Tab 1: Forum
-            _ForumTabPlaceholder(),
-            // Konten Tab 2: Chatbot AI
+            ForumTab(),
             _AIChatTabPlaceholder(),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ==========================================
-// PLACEHOLDER KOMPONEN (Nanti pisah ke file sendiri di folder widgets/)
-// ==========================================
-
-class _ForumTabPlaceholder extends StatelessWidget {
-  const _ForumTabPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.forum_outlined, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'Daftar Diskusi Forum\nSedang Dalam Pengerjaan',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -82,20 +117,52 @@ class _AIChatTabPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.memory, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'Ruang Chat AI\nSedang Dalam Pengerjaan',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey,
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.primaryColor.withOpacity(0.1),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(isDark ? 0.2 : 0.1),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+              child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 64,
+                  color: theme.primaryColor
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            Text(
+              'Asisten AI Pintar',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Fitur Chatbot AI sedang dalam tahap pengembangan. Sebentar lagi kamu bisa berkonsultasi secara langsung di sini.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

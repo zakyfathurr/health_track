@@ -12,6 +12,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _registerUseCase = RegisterUseCase();
@@ -20,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _usernameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -31,15 +33,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       await _registerUseCase(
         name: _nameCtrl.text.trim(),
+        username: _usernameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Registrasi gagal: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registrasi gagal: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -51,7 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Daftar Akun')),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -63,6 +66,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(labelText: 'Nama Lengkap'),
                   validator: (v) => v!.isEmpty ? 'Nama wajib diisi' : null,
                 ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _usernameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixText: '@ ',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Username wajib diisi';
+                    if (v.contains(' ')) return 'Username tidak boleh pakai spasi';
+                    return null;
+                  },
+                ),
+
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailCtrl,
@@ -76,7 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                   validator: (v) =>
-                      v!.length < 6 ? 'Password minimal 6 karakter' : null,
+                  v!.length < 6 ? 'Password minimal 6 karakter' : null,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
