@@ -14,6 +14,7 @@ class AuthRepository {
 
   Future<UserModel> register({
     required String name,
+    required String username,
     required String email,
     required String password,
   }) async {
@@ -22,17 +23,23 @@ class AuthRepository {
         email: email,
         password: password,
       );
+
+      await credential.user!.updateDisplayName(username);
+
       final uid = credential.user!.uid;
       final user = UserModel(
         uid: uid,
         name: name,
+        username: username,
         email: email,
         createdAt: DateTime.now(),
       );
+
       await _db
           .collection(AppConstants.usersCollection)
           .doc(uid)
           .set(user.toMap());
+
       await FirebaseCrashlytics.instance.setUserIdentifier(uid);
       return user;
     } on FirebaseAuthException catch (e) {

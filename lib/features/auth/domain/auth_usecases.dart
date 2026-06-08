@@ -18,9 +18,15 @@ class RegisterUseCase {
 
   Future<UserModel> call({
     required String name,
+    required String username,
     required String email,
     required String password,
-  }) => _repo.register(name: name, email: email, password: password);
+  }) => _repo.register(
+    name: name,
+    username: username,
+    email: email,
+    password: password,
+  );
 }
 
 class ResetPasswordUseCase {

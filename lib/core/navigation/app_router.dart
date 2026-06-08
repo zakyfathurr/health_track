@@ -11,6 +11,8 @@ import '../../features/daily_goals/presentation/goals_list_screen.dart';
 import '../../features/daily_goals/presentation/goal_add_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/mood_journal/presentation/mood_edit_screen.dart';
+import '../../features/mood_journal/domain/mood_model.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/home',
@@ -61,7 +63,7 @@ final appRouter = GoRouter(
           ],
         ),
         GoRoute(
-          path: '/goals', // Gabungan target olahraga
+          path: '/goals',
           builder: (context, state) => const GoalsListScreen(),
           routes: [
             GoRoute(

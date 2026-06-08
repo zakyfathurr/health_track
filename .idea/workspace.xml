@@ -5,15 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ebdcab32-cfe3-46b4-8a95-2f022043ede3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lib/features/community/presentation/community_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/features/community/data/forum_repository.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/features/community/domain/comment_model.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/features/community/domain/post_model.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/features/community/presentation/widgets/forum_tab.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/health_track_android.iml" beforeDir="false" afterPath="$PROJECT_DIR$/android/health_track_android.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/health_track.iml" beforeDir="false" afterPath="$PROJECT_DIR$/health_track.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/core/navigation/app_router.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/core/navigation/app_router.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/core/navigation/bottom_nav.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/core/navigation/bottom_nav.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/auth/data/auth_repository.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/auth/data/auth_repository.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/auth/domain/auth_usecases.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/auth/domain/auth_usecases.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/auth/domain/user_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/auth/domain/user_model.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/auth/presentation/register_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/auth/presentation/register_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/community/presentation/community_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/community/presentation/community_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/daily_goals/presentation/goals_list_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/daily_goals/presentation/goals_list_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/home/presentation/dashboard_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/home/presentation/dashboard_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/mood_journal/presentation/mood_list_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/mood_journal/presentation/mood_list_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/profile/presentation/profile_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/profile/presentation/profile_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
