@@ -39,7 +39,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Halo, Nafiz! 👋', // Dummy nama sementara
+                        'Halo, Nafiz! 👋',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
