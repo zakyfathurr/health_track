@@ -295,7 +295,20 @@ class _PostCard extends StatelessWidget {
                   isActive: isLiked,
                   activeColor: Colors.redAccent,
                   theme: theme,
-                  onTap: () async => await repository.toggleLike(post.id, post.likedBy),
+                  onTap: () async {
+                    try {
+                      await repository.toggleLike(post.id, post.likedBy);
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Gagal memberi like, coba lagi'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
                 ),
                 const SizedBox(width: 24),
                 _buildActionButton(
@@ -720,9 +733,20 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                             ? name
                             : (emailPrefix != null && emailPrefix.isNotEmpty ? emailPrefix : 'Anonim');
 
-                        await _repository.addComment(widget.postId, _commentCtrl.text, authorName);
-                        _commentCtrl.clear();
-                        _focusNode.unfocus();
+                        try {
+                          await _repository.addComment(widget.postId, _commentCtrl.text, authorName);
+                          _commentCtrl.clear();
+                          _focusNode.unfocus();
+                        } catch (_) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Gagal mengirim balasan, coba lagi'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
                       },
                     ),
                   ),
