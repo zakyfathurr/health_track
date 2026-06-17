@@ -1,3 +1,9 @@
+# Environment / secrets
+.env
+
+# IntelliJ/Android Studio per-user state (sumber konflik berulang)
+.idea/workspace.xml
+
 # Miscellaneous
 *.class
 *.lock

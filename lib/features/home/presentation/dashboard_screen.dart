@@ -219,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             builder: (context, snap) {
                               final goals = snap.data ?? [];
                               final done =
-                                  goals.where((g) => g.isCompleted).length;
+                                  goals.where((g) => g.isCompletedToday).length;
                               return _StatCard(
                                 title: 'Target Selesai',
                                 value: snap.connectionState ==

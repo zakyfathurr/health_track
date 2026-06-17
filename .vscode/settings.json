@@ -1,0 +1,7 @@
+{
+  "dart.analysisExcludedFolders": [
+    "build",
+    ".dart_tool"
+  ],
+  "cmake.sourceDirectory": "F:/kuliah/ITS/Semester 6/health_track/linux"
+}

@@ -12,16 +12,17 @@ class AddGoalUseCase {
     required String title,
     required double targetValue,
     required String unit,
-    required DateTime date,
+    required String categoryId,
   }) async {
     final goal = GoalModel(
       id: _repo.newId(),
       userId: userId,
       title: title,
       targetValue: targetValue,
-      currentProgress: 0,
       unit: unit,
-      date: date,
+      categoryId: categoryId,
+      createdAt: DateTime.now(),
+      progress: const {},
     );
     await _repo.add(goal);
     return goal;
@@ -35,13 +36,19 @@ class GetGoalsUseCase {
   Stream<List<GoalModel>> call(String userId) => _repo.streamByUser(userId);
 }
 
-class UpdateGoalProgressUseCase {
+/// Set progres HARI INI. Menerima nilai absolut baru, di-clamp >= 0.
+/// Presentation menghitung nilai baru (mis. `todayProgress + step`) lalu
+/// memanggil ini — supaya logika hari/tanggal terpusat di domain.
+class SetTodayProgressUseCase {
   final GoalRepository _repo;
-  UpdateGoalProgressUseCase([GoalRepository? repo])
+  SetTodayProgressUseCase([GoalRepository? repo])
     : _repo = repo ?? GoalRepository();
 
-  Future<void> call(String id, double currentProgress) =>
-      _repo.updateProgress(id, currentProgress);
+  Future<void> call(String goalId, double newValue) {
+    final clamped = newValue < 0 ? 0.0 : newValue;
+    final todayKey = GoalModel.dayKey(DateTime.now());
+    return _repo.setProgressForDay(goalId, todayKey, clamped);
+  }
 }
 
 class DeleteGoalUseCase {

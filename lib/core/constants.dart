@@ -1,16 +1,22 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// App-wide constants.
 ///
-/// This file IS committed (with a placeholder key) so the project compiles for
-/// every teammate after `git clone`. Do NOT gitignore it.
+/// This file IS committed (with no secret) so the project compiles for every
+/// teammate after `git clone`. Do NOT gitignore it.
 ///
-/// For the real OpenWeather key, prefer not committing it. Two options:
-///   1) Replace the placeholder locally and avoid committing that change, or
-///   2) Pass it at run time and read via String.fromEnvironment:
-///        flutter run --dart-define=OPENWEATHER_API_KEY=xxxxx
+/// The real OpenWeather key lives in `.env` (gitignored). Copy `.env.example`
+/// to `.env` and fill it in. `.env` is loaded in `main()` before `runApp()`.
 class AppConstants {
-  /// OpenWeather API key. Falls back to --dart-define if provided, otherwise
-  /// the placeholder below (which will make weather calls fail with 401 until set).
-  static const String openWeatherApiKey = String.fromEnvironment(
+
+  static String get openWeatherApiKey {
+    final fromDotenv =
+        dotenv.isInitialized ? dotenv.env['OPENWEATHER_API_KEY'] : null;
+    if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    return _dartDefineKey;
+  }
+
+  static const String _dartDefineKey = String.fromEnvironment(
     'OPENWEATHER_API_KEY',
     defaultValue: 'YOUR_API_KEY_HERE',
   );

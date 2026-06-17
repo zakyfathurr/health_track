@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../core/services/auth_notifier.dart';
+import '../domain/goal_category.dart';
 import '../domain/goal_usecases.dart';
 
 class GoalAddScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _GoalAddScreenState extends State<GoalAddScreen> {
   final _unitCtrl = TextEditingController();
   final _addGoalUseCase = AddGoalUseCase();
 
-  DateTime _date = DateTime.now();
+  String _categoryId = GoalCategory.all.first.id;
   bool _loading = false;
 
   @override
@@ -29,20 +29,28 @@ class _GoalAddScreenState extends State<GoalAddScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) setState(() => _date = picked);
+  void _applyTemplate(GoalTemplate t) {
+    setState(() {
+      _titleCtrl.text = t.title;
+      _targetCtrl.text = _fmt(t.targetValue);
+      _unitCtrl.text = t.unit;
+      _categoryId = t.categoryId;
+    });
+    FocusScope.of(context).unfocus();
   }
+
+  static String _fmt(double v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : v.toString();
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final uid = authNotifier.uid;
-    if (uid == null) return;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sesi habis. Silakan login ulang.')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     try {
@@ -51,7 +59,7 @@ class _GoalAddScreenState extends State<GoalAddScreen> {
         title: _titleCtrl.text.trim(),
         targetValue: double.parse(_targetCtrl.text.trim()),
         unit: _unitCtrl.text.trim(),
-        date: _date,
+        categoryId: _categoryId,
       );
       if (mounted) context.pop();
     } catch (e) {
@@ -67,73 +75,148 @@ class _GoalAddScreenState extends State<GoalAddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Tambah Target')),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _titleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Judul Target',
-                    hintText: 'mis. Minum Air',
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Judul wajib diisi' : null,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              // --- PRESET TEMPLATES ---
+              Text(
+                'Pilih cepat',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _targetCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Target',
-                    hintText: 'mis. 8',
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  validator: (v) {
-                    final parsed = double.tryParse((v ?? '').trim());
-                    if (parsed == null) return 'Masukkan angka yang valid';
-                    if (parsed <= 0) return 'Target harus lebih dari 0';
-                    return null;
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: GoalTemplate.presets.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final t = GoalTemplate.presets[i];
+                    final cat = GoalCategory.byId(t.categoryId);
+                    return ActionChip(
+                      avatar: Icon(cat.icon, size: 18, color: cat.color),
+                      label: Text(t.title),
+                      onPressed: () => _applyTemplate(t),
+                      backgroundColor: cat.color.withOpacity(0.08),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(color: cat.color.withOpacity(0.3)),
+                      ),
+                    );
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _unitCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Satuan',
-                    hintText: 'gelas, km, menit',
-                  ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Satuan wajib diisi' : null,
+              ),
+              const SizedBox(height: 24),
+
+              // --- CATEGORY PICKER ---
+              Text(
+                'Kategori',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: _pickDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Tanggal',
-                      suffixIcon: Icon(Icons.calendar_today),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: GoalCategory.all.map((cat) {
+                  final selected = cat.id == _categoryId;
+                  return ChoiceChip(
+                    avatar: Icon(
+                      cat.icon,
+                      size: 18,
+                      color: selected ? Colors.white : cat.color,
                     ),
-                    child: Text(DateFormat('d MMMM yyyy', 'id').format(_date)),
+                    label: Text(cat.label),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _categoryId = cat.id),
+                    selectedColor: cat.color,
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : null,
+                      fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    backgroundColor: cat.color.withOpacity(0.08),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: selected
+                            ? cat.color
+                            : cat.color.withOpacity(0.25),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // --- FIELDS ---
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Judul Target',
+                  hintText: 'mis. Minum Air',
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Judul wajib diisi' : null,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _targetCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Target/hari',
+                        hintText: 'mis. 8',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) {
+                        final parsed = double.tryParse((v ?? '').trim());
+                        if (parsed == null) return 'Angka tidak valid';
+                        if (parsed <= 0) return 'Harus > 0';
+                        return null;
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _loading ? null : _save,
-                  child: _loading
-                      ? const CircularProgressIndicator()
-                      : const Text('Simpan'),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _unitCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Satuan',
+                        hintText: 'gelas, km, menit',
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? 'Wajib diisi'
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _loading ? null : _save,
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Simpan'),
+              ),
+            ],
           ),
         ),
       ),
