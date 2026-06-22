@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'widgets/forum_tab.dart';
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:http/http.dart' as http;
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -123,43 +127,155 @@ class _AIChatTabState extends State<AIChatTab> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Dummy data chat untuk simulasi UI
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'role': 'assistant',
-      'content': 'Halo! Saya asisten HealthTrack. Ada yang bisa saya bantu terkait kesehatan atau progres targetmu hari ini?',
-    },
-  ];
+  // Naikkan client ke level class supaya bisa di-cancel (abort) secara manual
+  http.Client? _streamingClient;
 
+  List<Map<String, String>> _messages = [];
   bool _isTyping = false;
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _initWelcomeMessage();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    _streamingClient?.close(); // Pastikan memory leak gak terjadi pas tab ditutup
+    super.dispose();
+  }
+
+  void _initWelcomeMessage() {
+    _messages = [
+      {
+        'role': 'assistant',
+        'content': 'Halo Nafiz! Saya asisten HealthTrack. Ada yang bisa saya bantu terkait kesehatan atau targetmu hari ini?',
+      },
+    ];
+  }
+
+  // LOGIKA RESET CHAT YANG BENAR
+  void _resetChat() {
+    // 1. Bunuh koneksi stream yang lagi jalan (kalau ada)
+    _streamingClient?.close();
+
+    // 2. Reset UI ke state awal
+    setState(() {
+      _isTyping = false;
+      _initWelcomeMessage();
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
     setState(() {
       _messages.add({
         'role': 'user',
-        'content': _messageController.text,
+        'content': text,
       });
-      _isTyping = true; // Simulasi AI mikir
+      _isTyping = true;
     });
 
     _messageController.clear();
     _scrollToBottom();
 
-    // Simulasi jawaban AI setelah 2 detik
-    Future.delayed(const Duration(seconds: 2), () {
+    final cleanMessages = _messages.where((m) {
+      final content = m['content'] ?? '';
+      return !content.startsWith('⚠️');
+    }).toList();
+
+    const groqApiKey = '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';
+    const groqModel = 'llama-3.1-8b-instant';
+
+    final payload = {
+      "model": groqModel,
+      "messages": cleanMessages,
+      "temperature": 0.7,
+      "stream": true
+    };
+
+    final request = http.Request('POST', Uri.parse('https://api.groq.com/openai/v1/chat/completions'));
+    request.headers.addAll({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $groqApiKey',
+    });
+    request.body = jsonEncode(payload);
+
+    // Inisialisasi client baru setiap kali kirim pesan
+    _streamingClient = http.Client();
+
+    try {
+      final streamedResponse = await _streamingClient!.send(request).timeout(const Duration(seconds: 15));
+
+      if (streamedResponse.statusCode != 200) {
+        final errorBody = await streamedResponse.stream.bytesToString();
+        throw Exception('HTTP ${streamedResponse.statusCode}\nBody: $errorBody');
+      }
+
       if (mounted) {
         setState(() {
-          _isTyping = false;
           _messages.add({
             'role': 'assistant',
-            'content': 'Ini adalah simulasi respon AI. Nanti bagian ini akan terhubung!',
+            'content': '',
           });
+          _isTyping = false;
+        });
+      }
+
+      streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(
+            (line) {
+          if (line.isEmpty) return;
+
+          if (line.startsWith('data: ')) {
+            final dataStr = line.replaceFirst('data: ', '').trim();
+            if (dataStr == '[DONE]') return;
+
+            try {
+              final data = jsonDecode(dataStr);
+              final choices = data['choices'] as List<dynamic>?;
+              if (choices != null && choices.isNotEmpty) {
+                final delta = choices[0]['delta'] as Map<String, dynamic>?;
+                final contentChunk = delta?['content'] as String?;
+
+                if (contentChunk != null && contentChunk.isNotEmpty) {
+                  if (mounted) {
+                    setState(() {
+                      _messages.last['content'] = _messages.last['content']! + contentChunk;
+                    });
+                    _scrollToBottom();
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore parse errors per chunk
+            }
+          }
+        },
+        onDone: () => _streamingClient?.close(),
+        onError: (error) => _streamingClient?.close(),
+        cancelOnError: true,
+      );
+
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add({
+            'role': 'assistant',
+            'content': '⚠️ Asisten gagal terhubung ke server.\nDetail: ${e.toString()}',
+          });
+          _isTyping = false;
         });
         _scrollToBottom();
       }
-    });
+      _streamingClient?.close();
+    }
   }
 
   void _scrollToBottom() {
@@ -181,6 +297,45 @@ class _AIChatTabState extends State<AIChatTab> {
 
     return Column(
       children: [
+        // HEADER KECIL UNTUK RESET CHAT
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: isDark ? Colors.grey.shade900 : Colors.grey.shade200)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Online',
+                    style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: _resetChat,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Reset Obrolan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: Colors.redAccent.withOpacity(0.1),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // AREA CHAT
         Expanded(
           child: _messages.length <= 1 && !_isTyping
@@ -194,7 +349,7 @@ class _AIChatTabState extends State<AIChatTab> {
                 return _buildTypingIndicator(theme, isDark);
               }
               final msg = _messages[index];
-              return _buildChatBubble(msg['role'] == 'user', msg['content'], theme, isDark);
+              return _buildChatBubble(msg['role'] == 'user', msg['content']!, theme, isDark);
             },
           ),
         ),
@@ -226,16 +381,15 @@ class _AIChatTabState extends State<AIChatTab> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Asisten kesehatan pribadimu yang didukung AI',
+            'Asisten kesehatan pribadimu yang ditenagai Llama 3',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 40),
 
-          // Suggested Prompts
-          _buildSuggestedPrompt("Bagaimana cara mengurangi stres?"),
-          _buildSuggestedPrompt("Berikan tips tidur lebih nyenyak."),
-          _buildSuggestedPrompt("Apa manfaat meditasi pagi?"),
+          _buildSuggestedPrompt("Berapa target protein harian untuk workout?"),
+          _buildSuggestedPrompt("Bantu aku merencanakan jadwal istirahat."),
+          _buildSuggestedPrompt("Jelaskan manfaat kalori defisit."),
         ],
       ),
     );
@@ -267,23 +421,62 @@ class _AIChatTabState extends State<AIChatTab> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        // Lebarkan sedikit batasnya karena Markdown butuh ruang untuk list dan blockquote
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         decoration: BoxDecoration(
           color: isUser
               ? theme.primaryColor
-              : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200),
+              : (isDark ? const Color(0xFF222222) : Colors.white),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
             bottomLeft: Radius.circular(isUser ? 20 : 0),
             bottomRight: Radius.circular(isUser ? 0 : 20),
           ),
+          // Tambahkan shadow halus khusus buat bubble AI biar lebih pop-out
+          boxShadow: isUser ? [] : [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+          border: isUser ? null : Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
         ),
-        child: Text(
+        child: isUser
+            ? Text(
           content,
-          style: TextStyle(
-            color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
-            height: 1.4,
+          style: const TextStyle(color: Colors.white, height: 1.4, fontSize: 15),
+        )
+            : MarkdownBody(
+          data: content,
+          selectable: true, // Biar user bisa copas teks jawabannya
+          styleSheet: MarkdownStyleSheet(
+            p: TextStyle(color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87, height: 1.5, fontSize: 15),
+            h1: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w900, fontSize: 22),
+            h2: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
+            h3: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+            strong: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+            em: const TextStyle(fontStyle: FontStyle.italic),
+            listBullet: TextStyle(color: theme.primaryColor, fontSize: 16),
+            blockquoteDecoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade800.withOpacity(0.5) : theme.primaryColor.withOpacity(0.05),
+              border: Border(left: BorderSide(color: theme.primaryColor, width: 4)),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            blockquotePadding: const EdgeInsets.all(12),
+            code: TextStyle(
+              backgroundColor: Colors.transparent,
+              color: isDark ? Colors.orange.shade300 : Colors.pink.shade700,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.w600,
+            ),
+            codeblockDecoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A1A) : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+            ),
+            codeblockPadding: const EdgeInsets.all(16),
           ),
         ),
       ),
@@ -300,7 +493,7 @@ class _AIChatTabState extends State<AIChatTab> {
           color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Text('Healti sedang berpikir...', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey)),
+        child: const Text('Healti sedang mengetik...', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey)),
       ),
     );
   }
@@ -327,15 +520,15 @@ class _AIChatTabState extends State<AIChatTab> {
                   hintText: 'Tanya sesuatu...',
                   border: InputBorder.none,
                 ),
-                onSubmitted: (_) => _sendMessage(),
+                onSubmitted: (_) => _isTyping ? null : _sendMessage(),
               ),
             ),
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: _sendMessage,
+            onTap: _isTyping ? null : _sendMessage,
             child: CircleAvatar(
-              backgroundColor: theme.primaryColor,
+              backgroundColor: _isTyping ? Colors.grey : theme.primaryColor,
               child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
             ),
           ),
