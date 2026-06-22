@@ -188,7 +188,7 @@ class _AIChatTabState extends State<AIChatTab> {
       return !content.startsWith('⚠️');
     }).toList();
 
-    const groqApiKey = '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';
+    const groqApiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
     const groqModel = 'llama-3.1-8b-instant';
 
     final payload = {
