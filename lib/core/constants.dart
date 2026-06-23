@@ -11,7 +11,7 @@ class AppConstants {
 
   static String get openWeatherApiKey {
     final fromDotenv =
-        dotenv.isInitialized ? dotenv.env['OPENWEATHER_API_KEY'] : null;
+    dotenv.isInitialized ? dotenv.env['OPENWEATHER_API_KEY'] : null;
     if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
     return _dartDefineKey;
   }
