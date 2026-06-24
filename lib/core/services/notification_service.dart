@@ -85,18 +85,25 @@ class NotificationService {
   }
 
   /// Schedules a daily reminder at [hour]:[minute] (device local time).
-  /// Returns false if the user denies exact alarm permission.
-  ///
-  /// TESTING: ganti ke periodicallyShow(everyMinute) di bawah.
-  /// PRODUKSI: pakai zonedSchedule + matchDateTimeComponents.time.
+  /// Always returns true: jika exact alarm tidak diizinkan (Android 14+ membatasi
+  /// SCHEDULE_EXACT_ALARM untuk app non-kalender), otomatis fallback ke inexact
+  /// schedule supaya notif TETAP fire — hanya tidak presisi ke detik.
   Future<bool> scheduleGoalReminder(int hour, int minute) async {
     await cancelGoalReminder();
 
+    // Default exact; turun ke inexact bila sistem tak mengizinkan exact alarm.
+    // JANGAN mengandalkan return value requestExactAlarmsPermission() sebagai
+    // gate — di Android 14+ ia bisa balik true/null padahal alarm tetap di-drop.
+    var scheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
     final androidPlugin = _local
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
-      final granted = await androidPlugin.requestExactAlarmsPermission();
-      if (granted == false) return false;
+      var canExact = await androidPlugin.canScheduleExactNotifications() ?? false;
+      if (!canExact) {
+        await androidPlugin.requestExactAlarmsPermission();
+        canExact = await androidPlugin.canScheduleExactNotifications() ?? false;
+      }
+      if (!canExact) scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
     }
 
     final now = tz.TZDateTime.now(tz.local);
@@ -117,7 +124,7 @@ class NotificationService {
           priority: Priority.high,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: scheduleMode,
       matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,

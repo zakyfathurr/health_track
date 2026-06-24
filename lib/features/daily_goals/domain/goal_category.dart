@@ -60,6 +60,8 @@ class GoalCategory {
       icon: Icons.flag_rounded,
       color: Color(0xFF26A69A),
     ),
+    
+    
   ];
 
   static const GoalCategory fallback = GoalCategory(
